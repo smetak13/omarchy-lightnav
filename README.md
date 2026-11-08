@@ -25,13 +25,13 @@ The window you're in right now is dimmed.
 
 ## Finding windows
 
+Without a search, all your windows are listed **largest first**, whatever the app. A window filling the whole screen is usually the one you're working in, and a small panel in the corner is usually a log or a monitor. Windows of the same size follow reading order: top to bottom, then left to right.
+
 ### By app name
 
 Type part of the app name: `ghos` for Ghostty, `bra` for Brave. Exact matches come first, then names that start with what you typed, then names containing it anywhere.
 
-When an app has several windows, **the largest comes first**: a window filling the whole screen is usually the one you're working in, and a small panel in the corner is usually a log or a monitor. Windows of the same size follow reading order: top to bottom, then left to right.
-
-Without a search, all windows are listed alphabetically by app.
+When an app has several windows, they follow the same rule: the largest comes first.
 
 ### By what's in the window
 

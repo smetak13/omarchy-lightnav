@@ -16,12 +16,23 @@ function beyondTolerance(difference) {
   return Math.abs(difference) > SAME_PLACE_TOLERANCE ? difference : 0
 }
 
-function byName(a, b) {
+function compareNames(a, b) {
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-    || beyondTolerance((b.area || 0) - (a.area || 0))
+}
+
+function comparePlaces(a, b) {
+  return beyondTolerance((b.area || 0) - (a.area || 0))
     || beyondTolerance((a.top || 0) - (b.top || 0))
     || beyondTolerance((a.left || 0) - (b.left || 0))
     || (a.workspaceId || 0) - (b.workspaceId || 0)
+}
+
+function byName(a, b) {
+  return compareNames(a, b) || comparePlaces(a, b)
+}
+
+function bySize(a, b) {
+  return comparePlaces(a, b) || compareNames(a, b)
 }
 
 function searchable(text) {
@@ -42,7 +53,7 @@ function matchRank(row, needle) {
 
 function arrange(rows, query) {
   var needle = searchable(query).trim()
-  if (!needle) return rows.slice().sort(byName)
+  if (!needle) return rows.slice().sort(bySize)
 
   return rows
     .map(function(row) { return { row: row, rank: matchRank(row, needle) } })

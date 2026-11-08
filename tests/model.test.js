@@ -23,7 +23,20 @@ test("built-in panels count as the laptop monitor and everything else as externa
 const row = (name, title = "", extra = {}) => ({ name, title, ...extra })
 const names = rows => rows.map(r => r.name)
 
-test("with no query every app is listed alphabetically", () => {
+test("with no query windows are listed largest first, whatever the app", () => {
+  const rows = [
+    row("Chromium", "", { area: 0.25, top: 0, left: 0.5, workspaceId: 1 }),
+    row("Obsidian", "", { area: 1, top: 0, left: 0, workspaceId: 3 }),
+    row("Discord", "", { area: 0.25, top: 0.5, left: 0.5, workspaceId: 1 }),
+    row("foot", "", { area: 0.5, top: 0, left: 0, workspaceId: 1 })
+  ]
+
+  const arranged = Model.arrange(rows, "")
+
+  assert.deepEqual(names(arranged), ["Obsidian", "foot", "Chromium", "Discord"])
+})
+
+test("with no query windows of the same size and place fall back to app name", () => {
   const rows = [row("foot"), row("Chromium"), row("Obsidian"), row("Discord")]
 
   const arranged = Model.arrange(rows, "")
