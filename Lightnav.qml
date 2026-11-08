@@ -211,7 +211,20 @@ Item {
   Connections {
     target: Hyprland
     enabled: root.opened
-    function onRawEvent(event) { refreshSettle.restart() }
+    function onRawEvent(event) {
+      Hyprland.refreshToplevels()
+      refreshSettle.restart()
+    }
+  }
+
+  Instantiator {
+    model: Hyprland.toplevels
+    delegate: Connections {
+      required property var modelData
+      target: modelData
+      enabled: root.opened
+      function onLastIpcObjectChanged() { refreshSettle.restart() }
+    }
   }
 
   Connections {
