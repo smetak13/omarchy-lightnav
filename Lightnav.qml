@@ -15,6 +15,7 @@ Item {
   property var manifest: null
 
   property bool opened: false
+  property string mode: "list"
   property string filterText: ""
   property int selectedIndex: 0
   property var rows: []
@@ -38,12 +39,16 @@ Item {
   readonly property int rowHeight: Style.space(50)
   readonly property int miniatureHeight: Style.space(28)
   readonly property int listHeight: rowHeight * visibleRows
-  readonly property int cardWidth: Math.min(Style.space(560), panel.width - Style.gapsOut * 2)
-  readonly property int cardHeight: contentMargin * 2 + headerHeight + contentSpacing + listHeight
+  readonly property bool settingUp: mode === "setup"
+  readonly property int cardWidth: Math.min(Style.space(settingUp ? 460 : 560), panel.width - Style.gapsOut * 2)
+  readonly property int cardHeight: settingUp
+    ? card.contentTopInset + card.contentBottomInset + shortcutSetup.implicitHeight
+    : contentMargin * 2 + headerHeight + contentSpacing + listHeight
 
   Commons.Translations { id: strings; directory: Qt.resolvedUrl("i18n") }
 
   function open(payloadJson) {
+    root.mode = "list"
     root.filterText = ""
     root.rows = []
     root.selectedIndex = 0
@@ -180,6 +185,18 @@ Item {
     Util.execDetached("hyprctl dispatch " + Util.shellQuote("hl.dsp.window.close({ window = \"address:" + address + "\" })"))
   }
 
+  function offerShortcut() {
+    root.mode = "setup"
+    root.opened = true
+    Qt.callLater(function() { filterInput.forceActiveFocus() })
+  }
+
+  Timer {
+    interval: 2500
+    running: true
+    onTriggered: shortcutSetup.check()
+  }
+
   PointerMoveGate {
     id: pointerGate
     referenceItem: card
@@ -244,7 +261,10 @@ Item {
         anchors.fill: parent
 
         Keys.onPressed: function(event) {
-          if (event.key === Qt.Key_Escape) {
+          if (root.settingUp) {
+            shortcutSetup.handleKey(event)
+            event.accepted = true
+          } else if (event.key === Qt.Key_Escape) {
             if (root.filterText) root.setFilter("")
             else root.dismiss()
             event.accepted = true
@@ -273,6 +293,18 @@ Item {
         }
       }
 
+      ShortcutSetup {
+        id: shortcutSetup
+        anchors.fill: parent
+        anchors.topMargin: card.contentTopInset
+        anchors.rightMargin: card.contentRightInset
+        anchors.bottomMargin: card.contentBottomInset
+        anchors.leftMargin: card.contentLeftInset
+        visible: root.settingUp
+        onWanted: root.offerShortcut()
+        onFinished: root.dismiss()
+      }
+
       Column {
         anchors.fill: parent
         anchors.topMargin: card.contentTopInset
@@ -280,6 +312,7 @@ Item {
         anchors.bottomMargin: card.contentBottomInset
         anchors.leftMargin: card.contentLeftInset
         spacing: root.contentSpacing
+        visible: !root.settingUp
 
         Item {
           width: parent.width

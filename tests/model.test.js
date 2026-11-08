@@ -124,3 +124,58 @@ test("a pixel of difference from gaps or odd widths does not count as a differen
 
   assert.deepEqual(titles(arranged), ["left", "right"])
 })
+
+const SUPER = 64
+const ALT = 8
+const bind = (modmask, key, description = "") => ({ modmask, key, description })
+
+test("the suggested shortcut is SUPER + N when it is free", () => {
+  const binds = [bind(SUPER | 4, "N", "Network"), bind(SUPER | 1, "N", "Editor")]
+
+  const shortcut = Model.freeShortcut(binds)
+
+  assert.equal(shortcut.label, "SUPER + N")
+})
+
+test("when SUPER + N is taken the suggestion falls back to SUPER + ALT + N, then to none", () => {
+  const taken = [bind(SUPER, "n", "Notes")]
+  const allTaken = [bind(SUPER, "N", "Notes"), bind(SUPER | ALT, "N", "New window")]
+
+  const fallback = Model.freeShortcut(taken)
+  const none = Model.freeShortcut(allTaken)
+
+  assert.equal(fallback.label, "SUPER + ALT + N")
+  assert.equal(none, null)
+})
+
+test("Lightnav counts as set up once any shortcut is described as Lightnav", () => {
+  const before = [bind(SUPER, "SPACE", "Omarchy menu")]
+  const after = before.concat([bind(SUPER | ALT, "J", "Lightnav")])
+
+  assert.equal(Model.isSetUp(before), false)
+  assert.equal(Model.isSetUp(after), true)
+})
+
+test("the shortcut line binds the chosen keys to Lightnav", () => {
+  const line = Model.shortcutLine("SUPER + N")
+
+  assert.equal(line, 'o.bind("SUPER + N", "Lightnav", { panel = "smetak13.lightnav" })')
+})
+
+test("the manual command appends the shortcut line to the Hyprland bindings", () => {
+  const command = Model.manualCommand("SUPER + N")
+
+  assert.equal(command, `echo 'o.bind("SUPER + N", "Lightnav", { panel = "smetak13.lightnav" })' >> ~/.config/hypr/bindings.lua && hyprctl reload`)
+})
+
+test("the block Lightnav adds is marked so it can be found and removed", () => {
+  const block = Model.shortcutBlock("SUPER + N")
+
+  assert.equal(block, [
+    "",
+    "-- >>> Lightnav shortcut, added by Lightnav",
+    'o.bind("SUPER + N", "Lightnav", { panel = "smetak13.lightnav" })',
+    "-- <<< Lightnav shortcut",
+    ""
+  ].join("\n"))
+})

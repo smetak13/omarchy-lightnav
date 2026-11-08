@@ -80,6 +80,41 @@ function fallbackName(appClass, title) {
   return word.charAt(0).toUpperCase() + word.slice(1)
 }
 
+var SUPER_MASK = 64
+var ALT_MASK = 8
+var SHORTCUT_CANDIDATES = [
+  { label: "SUPER + N", modmask: SUPER_MASK, key: "N" },
+  { label: "SUPER + ALT + N", modmask: SUPER_MASK | ALT_MASK, key: "N" }
+]
+
+var SHORTCUT_DESCRIPTION = "Lightnav"
+
+var PLUGIN_ID = "smetak13.lightnav"
+
+function shortcutLine(label) {
+  return 'o.bind("' + label + '", "' + SHORTCUT_DESCRIPTION + '", { panel = "' + PLUGIN_ID + '" })'
+}
+
+function manualCommand(label) {
+  return "echo '" + shortcutLine(label) + "' >> ~/.config/hypr/bindings.lua && hyprctl reload"
+}
+
+function shortcutBlock(label) {
+  return ["", "-- >>> Lightnav shortcut, added by Lightnav", shortcutLine(label), "-- <<< Lightnav shortcut", ""].join("\n")
+}
+
+function isSetUp(binds) {
+  return binds.some(function(bind) { return bind.description === SHORTCUT_DESCRIPTION })
+}
+
+function freeShortcut(binds) {
+  return SHORTCUT_CANDIDATES.filter(function(candidate) {
+    return !binds.some(function(bind) {
+      return bind.modmask === candidate.modmask && String(bind.key).toUpperCase() === candidate.key
+    })
+  })[0] || null
+}
+
 if (typeof module !== "undefined") {
   module.exports = {
     slotLabel: slotLabel,
@@ -87,6 +122,11 @@ if (typeof module !== "undefined") {
     arrange: arrange,
     miniature: miniature,
     logicalSize: logicalSize,
-    fallbackName: fallbackName
+    fallbackName: fallbackName,
+    freeShortcut: freeShortcut,
+    isSetUp: isSetUp,
+    shortcutLine: shortcutLine,
+    manualCommand: manualCommand,
+    shortcutBlock: shortcutBlock
   }
 }

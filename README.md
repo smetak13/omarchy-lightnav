@@ -59,19 +59,37 @@ A minimized window comes back to the workspace you're on. `Delete` closes a wind
 
 ## Install
 
+Run this in a terminal:
+
 ```bash
 omarchy plugin add https://github.com/smetak13/omarchy-lightnav.git --enable
 ```
 
-Then add a shortcut to `~/.config/hypr/bindings.lua`:
+A few seconds later, Lightnav offers to set up its keyboard shortcut:
 
-```lua
-o.bind("SUPER + N", "Lightnav", { panel = "smetak13.lightnav" })
+![Lightnav offers to add SUPER + N to your Hyprland bindings](docs/first-run.png)
+
+Choose **Add** (or press `Enter`) and you're done: press `SUPER + N` anywhere to open Lightnav. It adds the shortcut to `~/.config/hypr/bindings.lua`, between two marked comment lines, and never changes the file without asking. If `SUPER + N` is already taken, it offers `SUPER + ALT + N` instead.
+
+Lightnav stays loaded in the shell, so it opens instantly.
+
+### Adding the shortcut yourself
+
+If you chose **Not now**, Lightnav shows the command below and won't ask again. Run it whenever you want the shortcut:
+
+```bash
+echo 'o.bind("SUPER + N", "Lightnav", { panel = "smetak13.lightnav" })' >> ~/.config/hypr/bindings.lua && hyprctl reload
 ```
 
-`SUPER + N` is free in a default Omarchy setup. Lightnav stays loaded in the shell, so it opens instantly.
+For a different key, change `SUPER + N` in the command.
 
-To remove it, run `omarchy plugin remove smetak13.lightnav` and delete the shortcut.
+### Remove
+
+```bash
+omarchy plugin remove smetak13.lightnav
+```
+
+Then delete the Lightnav shortcut from `~/.config/hypr/bindings.lua`. If Lightnav added it for you, it's the block between `-- >>> Lightnav shortcut` and `-- <<< Lightnav shortcut`.
 
 ## Development
 

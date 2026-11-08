@@ -1,5 +1,20 @@
 {
   "search.placeholder": "Go to app…",
   "search.noMatches": "No open window matches \"%1\"",
-  "search.empty": "No open windows"
+  "search.empty": "No open windows",
+  "setup.title.offer": "Lightnav is installed",
+  "setup.body.offer": "Jump to any open window from anywhere with a keyboard shortcut. Lightnav can add %1 to your Hyprland bindings for you.",
+  "setup.title.added": "You're all set",
+  "setup.body.added": "Press %1 anywhere to open Lightnav. The shortcut is in ~/.config/hypr/bindings.lua if you ever want to change it.",
+  "setup.title.manual": "Add the shortcut later",
+  "setup.body.manual": "No problem. When you want it, run this in a terminal:",
+  "setup.title.taken": "Pick a shortcut",
+  "setup.body.taken": "SUPER + N and SUPER + ALT + N are already in use. Add this line to ~/.config/hypr/bindings.lua with a free key of your choice:",
+  "setup.title.failed": "Couldn't add the shortcut",
+  "setup.body.failed": "Lightnav couldn't write to ~/.config/hypr/bindings.lua. Run this in a terminal instead:",
+  "setup.add": "Add",
+  "setup.notNow": "Not now",
+  "setup.copy": "Copy",
+  "setup.copied": "Copied",
+  "setup.done": "Done"
 }
