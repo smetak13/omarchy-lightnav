@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "smetak13.lightnav",
+  "name": "Lightnav",
+  "version": "1.0.0",
+  "author": "Simon Smejkal",
+  "description": "Lightning-fast navigation between running apps and tray apps, on any workspace and monitor",
+  "kinds": [
+    "overlay"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "overlay": "Lightnav.qml"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/smetak13/omarchy-lightnav",
+  "repository": "https://github.com/smetak13/omarchy-lightnav"
+}
