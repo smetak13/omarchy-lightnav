@@ -2,6 +2,8 @@
 
 Lightning-fast navigation between the apps you have running in [Omarchy](https://omarchy.org): every open window on any workspace and any monitor, plus apps in the system tray. Type a few letters, press Enter, and you are there.
 
+![Lightnav](preview.png)
+
 ## What it shows
 
 Every row is one open window:
