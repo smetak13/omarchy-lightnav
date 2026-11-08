@@ -1,6 +1,5 @@
 import Quickshell
 import Quickshell.Hyprland
-import Quickshell.Services.SystemTray
 import Quickshell.Wayland
 import Quickshell.Widgets
 import QtQuick
@@ -19,15 +18,9 @@ Item {
   property string filterText: ""
   property int selectedIndex: 0
   property var rows: []
-  property var menuStack: []
-  property var pendingTrayItem: null
-  property string pendingTrayName: ""
-  property string menuTitle: ""
 
   readonly property string laptopGlyph: "\uDB80\uDF22"
   readonly property string monitorGlyph: "\uDB80\uDF79"
-  readonly property string trayGlyph: "\uDB84\uDE94"
-  readonly property string backGlyph: "\uDB80\uDD41"
   readonly property string minimizedWorkspace: "special:minimized"
   readonly property int visibleRows: 6
 
@@ -43,17 +36,14 @@ Item {
   readonly property int contentSpacing: Style.spacing.md
   readonly property int headerHeight: Math.max(Style.space(34), Style.font.title + Style.spacing.controlPaddingY * 2)
   readonly property int rowHeight: Style.space(50)
-  readonly property int menuRowHeight: Style.space(34)
   readonly property int miniatureHeight: Style.space(28)
-  readonly property bool inMenu: menuStack.length > 0
-  readonly property int listHeight: (inMenu ? menuRowHeight : rowHeight) * visibleRows
+  readonly property int listHeight: rowHeight * visibleRows
   readonly property int cardWidth: Math.min(Style.space(560), panel.width - Style.gapsOut * 2)
   readonly property int cardHeight: contentMargin * 2 + headerHeight + contentSpacing + listHeight
 
   Commons.Translations { id: strings; directory: Qt.resolvedUrl("i18n") }
 
   function open(payloadJson) {
-    root.menuStack = []
     root.filterText = ""
     root.rows = []
     root.selectedIndex = 0
@@ -64,9 +54,6 @@ Item {
 
   function close() {
     root.opened = false
-    root.pendingTrayItem = null
-    trayResponse.stop()
-    root.menuStack = []
   }
 
   function dismiss() {
@@ -105,10 +92,8 @@ Item {
       var title = String(toplevel.title || "")
 
       collected.push({
-        kind: "window",
         name: name,
         title: title.toLowerCase() === name.toLowerCase() ? "" : title,
-        appKey: entry ? entry.id : appClass,
         icon: entry && entry.icon ? Quickshell.iconPath(entry.icon, true) : "",
         address: String(toplevel.address || ""),
         workspaceId: workspace ? workspace.id : 0,
@@ -117,8 +102,7 @@ Item {
         geometry: root.monitorGeometry(toplevel.monitor),
         at: ipc.at,
         size: ipc.size,
-        current: toplevel.activated === true,
-        trayItem: null
+        current: toplevel.activated === true
       })
     }
 
@@ -140,44 +124,15 @@ Item {
     return collected.filter(function(row) { return row.workspaceId === workspaceId && row.at && row.size })
   }
 
-  function trayRows() {
-    var items = SystemTray.items.values
-    var collected = []
-    for (var i = 0; i < items.length; i++) {
-      var item = items[i]
-      if (item.status === Status.Passive) continue
-      var entry = item.id ? DesktopEntries.heuristicLookup(item.id) : null
-      var name = entry ? String(entry.name || "") : ""
-      if (!name) name = String(item.title || item.tooltipTitle || item.id || "")
-      if (!name) continue
-      collected.push({
-        kind: "tray",
-        name: name,
-        title: "",
-        appKey: entry ? entry.id : String(item.id || ""),
-        icon: String(item.icon || ""),
-        current: false,
-        slot: "",
-        internal: false,
-        tiles: [],
-        aspect: 1,
-        trayItem: item
-      })
-    }
-    return collected
-  }
-
   function rowKey(row) {
-    return row ? row.kind + ":" + (row.address || row.appKey) : ""
+    return row ? row.address : ""
   }
 
   function rebuild(selectFirst) {
-    if (!root.opened || root.inMenu) return
-    var windows = root.windowRows()
-    var all = windows.concat(Model.withoutTrayDuplicates(root.trayRows(), windows))
+    if (!root.opened) return
     var keepKey = selectFirst ? "" : root.rowKey(root.rows[root.selectedIndex])
     var previousIndex = root.selectedIndex
-    root.rows = Model.arrange(all, root.filterText)
+    root.rows = Model.arrange(root.windowRows(), root.filterText)
     pointerGate.reset()
 
     var index = selectFirst ? 0 : Math.max(0, Math.min(previousIndex, root.rows.length - 1))
@@ -189,56 +144,19 @@ Item {
   }
 
   function setFilter(text) {
-    if (root.inMenu) return
     root.filterText = text
     root.rebuild(true)
   }
 
-  readonly property var menuEntries: {
-    var opener = menuOpeners.count > 0 ? menuOpeners.objectAt(menuOpeners.count - 1) : null
-    var values = opener && opener.children ? opener.children.values : []
-    return values.filter(function(entry) { return !entry.isSeparator })
-  }
-
-  readonly property int itemCount: inMenu ? menuEntries.length : rows.length
-
   function select(delta) {
-    if (root.itemCount === 0) return
-    root.selectedIndex = Math.max(0, Math.min(root.itemCount - 1, root.selectedIndex + delta))
+    if (root.rows.length === 0) return
+    root.selectedIndex = Math.max(0, Math.min(root.rows.length - 1, root.selectedIndex + delta))
     resultList.positionViewAtIndex(root.selectedIndex, ListView.Contain)
   }
 
   function activate(index) {
-    if (root.inMenu) root.triggerMenuEntry(root.menuEntries[index])
-    else root.activateRow(root.rows[index])
-  }
-
-  function activateRow(row) {
-    if (!row) return
-    if (row.kind === "tray") root.activateTray(row.trayItem, row.name)
-    else root.focusWindow(row)
-  }
-
-  function activateTray(item, name) {
-    if (item.onlyMenu && item.hasMenu) {
-      root.showTrayMenu(item, name)
-      return
-    }
-    item.activate()
-    if (!item.hasMenu) {
-      root.dismiss()
-      return
-    }
-    root.pendingTrayItem = item
-    root.pendingTrayName = name
-    trayResponse.restart()
-  }
-
-  function showTrayMenu(item, name) {
-    root.filterText = ""
-    root.menuTitle = name
-    root.menuStack = [item.menu]
-    root.selectedIndex = 0
+    var row = root.rows[index]
+    if (row) root.focusWindow(row)
   }
 
   function focusWindow(row) {
@@ -257,40 +175,14 @@ Item {
   }
 
   function closeWindow(row) {
-    if (!row || row.kind !== "window") return
+    if (!row) return
     var address = row.address.indexOf("0x") === 0 ? row.address : "0x" + row.address
     Util.execDetached("hyprctl dispatch " + Util.shellQuote("hl.dsp.window.close({ window = \"address:" + address + "\" })"))
-  }
-
-  function triggerMenuEntry(entry) {
-    if (!entry || !entry.enabled) return
-    if (entry.hasChildren) {
-      root.menuStack = root.menuStack.concat([entry])
-      root.selectedIndex = 0
-      return
-    }
-    entry.triggered()
-    root.dismiss()
-  }
-
-  function menuBack() {
-    root.menuStack = root.menuStack.slice(0, -1)
-    root.selectedIndex = 0
-    root.rebuild()
   }
 
   PointerMoveGate {
     id: pointerGate
     referenceItem: card
-  }
-
-  Instantiator {
-    id: menuOpeners
-    model: root.menuStack
-    delegate: QsMenuOpener {
-      required property var modelData
-      menu: modelData
-    }
   }
 
   Timer {
@@ -299,32 +191,10 @@ Item {
     onTriggered: root.rebuild()
   }
 
-  Timer {
-    id: trayResponse
-    interval: 400
-    onTriggered: {
-      var item = root.pendingTrayItem
-      root.pendingTrayItem = null
-      if (item) root.showTrayMenu(item, root.pendingTrayName)
-    }
-  }
-
   Connections {
     target: Hyprland
     enabled: root.opened
-    function onRawEvent(event) {
-      if (root.pendingTrayItem && (event.name === "openwindow" || event.name === "activewindowv2")) {
-        root.dismiss()
-        return
-      }
-      refreshSettle.restart()
-    }
-  }
-
-  Connections {
-    target: SystemTray.items
-    enabled: root.opened
-    function onValuesChanged() { refreshSettle.restart() }
+    function onRawEvent(event) { refreshSettle.restart() }
   }
 
   Connections {
@@ -375,14 +245,10 @@ Item {
 
         Keys.onPressed: function(event) {
           if (event.key === Qt.Key_Escape) {
-            if (root.inMenu) root.menuBack()
-            else if (root.filterText) root.setFilter("")
+            if (root.filterText) root.setFilter("")
             else root.dismiss()
             event.accepted = true
-          } else if (root.inMenu && (event.key === Qt.Key_Backspace || Util.readingKey(event) === Qt.Key_Left)) {
-            root.menuBack()
-            event.accepted = true
-          } else if (!root.inMenu && Util.editsFilter(event, root.filterText)) {
+          } else if (Util.editsFilter(event, root.filterText)) {
             root.setFilter(Util.editedFilter(event, root.filterText))
             event.accepted = true
           } else if (event.key === Qt.Key_Up) {
@@ -398,12 +264,10 @@ Item {
             root.select(root.visibleRows)
             event.accepted = true
           } else if (event.key === Qt.Key_Delete) {
-            if (!root.inMenu) root.closeWindow(root.rows[root.selectedIndex])
+            root.closeWindow(root.rows[root.selectedIndex])
             event.accepted = true
           } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
             root.activate(root.selectedIndex)
-            event.accepted = true
-          } else if (root.inMenu && event.text) {
             event.accepted = true
           }
         }
@@ -427,7 +291,6 @@ Item {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             keyHandler: keyCatcher
-            readOnly: root.inMenu
             color: root.foreground
             font.family: root.fontFamily
             font.pixelSize: Style.font.heading
@@ -442,10 +305,8 @@ Item {
           PlainText {
             anchors.fill: parent
             verticalAlignment: Text.AlignVCenter
-            visible: root.inMenu || (!root.filterText && !filterInput.preeditText)
-            text: root.inMenu
-              ? root.backGlyph + " " + root.menuTitle
-              : strings.t("search.placeholder")
+            visible: !root.filterText && !filterInput.preeditText
+            text: strings.t("search.placeholder")
             opacity: 0.58
             font.pixelSize: Style.font.heading
           }
@@ -460,15 +321,15 @@ Item {
             anchors.fill: parent
             clip: true
             boundsBehavior: Flickable.StopAtBounds
-            model: root.inMenu ? root.menuEntries : root.rows
-            delegate: root.inMenu ? menuDelegate : appDelegate
+            model: root.rows
+            delegate: windowDelegate
           }
 
           PlainText {
             anchors.centerIn: parent
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            visible: root.itemCount === 0
+            visible: root.rows.length === 0
             text: root.filterText ? strings.t("search.noMatches").arg(root.filterText) : strings.t("search.empty")
             opacity: 0.7
             font.pixelSize: Style.font.title
@@ -479,15 +340,14 @@ Item {
   }
 
   Component {
-    id: appDelegate
+    id: windowDelegate
 
     Rectangle {
-      id: appRow
+      id: windowRow
       required property int index
       required property var modelData
 
       readonly property bool hasCursor: index === root.selectedIndex
-      readonly property bool isTray: modelData.kind === "tray"
 
       width: ListView.view.width
       height: root.rowHeight
@@ -498,14 +358,14 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: Style.space(10)
         anchors.rightMargin: Style.space(10)
-        opacity: appRow.modelData.current ? 0.45 : 1
+        opacity: windowRow.modelData.current ? 0.45 : 1
 
         IconImage {
           id: appIcon
           anchors.left: parent.left
           anchors.verticalCenter: parent.verticalCenter
           implicitSize: Style.space(28)
-          source: appRow.modelData.icon
+          source: windowRow.modelData.icon
           asynchronous: true
         }
 
@@ -524,8 +384,8 @@ Item {
             PlainText {
               id: appName
               width: Math.min(implicitWidth, parent.width)
-              text: appRow.modelData.name
-              color: appRow.hasCursor ? root.accent : root.foreground
+              text: windowRow.modelData.name
+              color: windowRow.hasCursor ? root.accent : root.foreground
               font.pixelSize: Style.font.title
             }
 
@@ -535,7 +395,7 @@ Item {
               anchors.right: parent.right
               anchors.baseline: appName.baseline
               visible: text.length > 0
-              text: appRow.modelData.title
+              text: windowRow.modelData.title
               opacity: 0.5
               font.pixelSize: Style.font.bodySmall
             }
@@ -555,15 +415,14 @@ Item {
               PlainText {
                 id: slotText
                 anchors.centerIn: parent
-                text: appRow.isTray ? root.trayGlyph : appRow.modelData.slot
+                text: windowRow.modelData.slot
                 font.pixelSize: Style.font.caption
               }
             }
 
             PlainText {
-              visible: !appRow.isTray
               anchors.verticalCenter: parent.verticalCenter
-              text: appRow.modelData.internal ? root.laptopGlyph : root.monitorGlyph
+              text: windowRow.modelData.internal ? root.laptopGlyph : root.monitorGlyph
               opacity: 0.7
               font.pixelSize: Style.font.body
             }
@@ -574,16 +433,16 @@ Item {
           id: miniature
           anchors.right: parent.right
           anchors.verticalCenter: parent.verticalCenter
-          visible: appRow.modelData.tiles.length > 0
+          visible: windowRow.modelData.tiles.length > 0
           height: root.miniatureHeight
-          width: visible ? Math.round(height * appRow.modelData.aspect) : 0
+          width: visible ? Math.round(height * windowRow.modelData.aspect) : 0
           radius: Math.min(root.cornerRadius, Style.space(3))
           color: "transparent"
           border.width: Math.max(1, Style.spacing.hairline)
           border.color: Util.alpha(root.foreground, 0.35)
 
           Repeater {
-            model: appRow.modelData.tiles
+            model: windowRow.modelData.tiles
             delegate: Rectangle {
               required property var modelData
               readonly property real inset: Style.space(2)
@@ -602,45 +461,8 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onPositionChanged: function(mouse) { if (pointerGate.moved(appRow, mouse)) root.selectedIndex = appRow.index }
-        onClicked: root.activate(appRow.index)
-      }
-    }
-  }
-
-  Component {
-    id: menuDelegate
-
-    Rectangle {
-      id: menuRow
-      required property int index
-      required property var modelData
-
-      readonly property bool hasCursor: index === root.selectedIndex
-
-      width: ListView.view.width
-      height: root.menuRowHeight
-      radius: root.cornerRadius
-      color: hasCursor ? root.selectedBackground : "transparent"
-      opacity: modelData.enabled ? 1 : 0.4
-
-      PlainText {
-        anchors.left: parent.left
-        anchors.leftMargin: Style.space(12)
-        anchors.right: parent.right
-        anchors.rightMargin: Style.space(12)
-        anchors.verticalCenter: parent.verticalCenter
-        text: String(menuRow.modelData.text || "") + (menuRow.modelData.hasChildren ? "  …" : "")
-        color: menuRow.hasCursor ? root.accent : root.foreground
-        font.pixelSize: Style.font.title
-      }
-
-      MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onPositionChanged: function(mouse) { if (pointerGate.moved(menuRow, mouse)) root.selectedIndex = menuRow.index }
-        onClicked: root.activate(menuRow.index)
+        onPositionChanged: function(mouse) { if (pointerGate.moved(windowRow, mouse)) root.selectedIndex = windowRow.index }
+        onClicked: root.activate(windowRow.index)
       }
     }
   }

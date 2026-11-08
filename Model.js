@@ -51,21 +51,6 @@ function arrange(rows, query) {
     .map(function(ranked) { return ranked.row })
 }
 
-function identities(row) {
-  var key = searchable(row.appKey)
-  return [key, key.split(".").pop(), searchable(row.name)].filter(Boolean)
-}
-
-function withoutTrayDuplicates(trayRows, windowRows) {
-  var open = {}
-  windowRows.forEach(function(row) {
-    identities(row).forEach(function(identity) { open[identity] = true })
-  })
-  return trayRows.filter(function(row) {
-    return !identities(row).some(function(identity) { return open[identity] })
-  })
-}
-
 function logicalSize(monitor) {
   var scale = monitor.scale || 1
   var rotated = monitor.transform % 2 === 1
@@ -100,7 +85,6 @@ if (typeof module !== "undefined") {
     slotLabel: slotLabel,
     isInternalMonitor: isInternalMonitor,
     arrange: arrange,
-    withoutTrayDuplicates: withoutTrayDuplicates,
     miniature: miniature,
     logicalSize: logicalSize,
     fallbackName: fallbackName

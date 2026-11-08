@@ -1,33 +1,61 @@
 # Lightnav
 
-Lightning-fast navigation between the apps you have running in [Omarchy](https://omarchy.org): every open window on any workspace and any monitor, plus apps in the system tray. Type a few letters, press Enter, and you are there.
+**Jump to any open window in a couple of keystrokes, wherever it is: another workspace, another monitor, the scratchpad.**
 
-![Lightnav](preview.png)
+Press `SUPER + N`, type a few letters of the app, press Enter. Lightnav switches to the right workspace and monitor and focuses the window.
 
-## What it shows
+![Searching for Ghostty: every terminal, largest first, with its command, folder, workspace and position](preview.png)
 
-Every row is one open window:
+## Why
 
-- **App name** as the app calls itself (from its desktop entry), followed by the window title
-- **Workspace number** in a small square, numbered the same way as the bar (each monitor has its own 1–0); `S` for the scratchpad and minimized windows
-- **Laptop or monitor icon**: whether the window is on the built-in display or an external monitor
-- **Layout miniature**: the windows of that workspace drawn to scale, with this one highlighted
+With ten workspaces per monitor and a few terminals, browsers and editors spread across them, it's easy to forget where a window went. `ALT + TAB` cycles through windows one at a time, and `SUPER + 1…0` only helps if you remember the workspace. Lightnav shows you **all your open windows in one list** and takes you to the one you want, wherever it is.
 
-Tray apps without an open window are listed too, with a tray badge. Apps that are not running are never shown.
+It only lists windows that are open right now. It doesn't launch apps; that's what the Omarchy menu (`SUPER + SPACE`) is for.
 
-The window you are in is dimmed. Without a search, apps are sorted alphabetically; windows of the same app go largest first, then in reading order (top to bottom, left to right). While you type, the list is filtered by app name and window title, ignoring case and diacritics, and ranked by how well it matches.
+## What you see
+
+Each row is one open window:
+
+- **App name**, as the app calls itself, and the **window title** next to it. For a terminal that's usually the running command and the folder; for a browser, the page.
+- **Workspace number** in a small square, numbered like the bar, where each monitor has its own 1–0. `S` means the scratchpad or a minimized window.
+- **Laptop or monitor icon**, showing whether the window is on the built-in display or an external monitor.
+- **Layout miniature** on the right: the windows of that workspace drawn to scale, with this one highlighted. You can tell at a glance whether it's the big window on the left or the small one at the bottom.
+
+The window you're in right now is dimmed.
+
+## Finding windows
+
+### By app name
+
+Type part of the app name: `ghos` for Ghostty, `bra` for Brave. Exact matches come first, then names that start with what you typed, then names containing it anywhere.
+
+When an app has several windows, **the largest comes first**: a window filling the whole screen is usually the one you're working in, and a small panel in the corner is usually a log or a monitor. Windows of the same size follow reading order: top to bottom, then left to right.
+
+Without a search, all windows are listed alphabetically by app.
+
+### By what's in the window
+
+The search also looks at window titles, so you can find a window by **what it's showing** instead of which app it is:
+
+- a project folder (`aurora`) finds every terminal and editor working in it
+- a running command (`npm`, `ssh`, `htop`) finds the terminal that runs it
+- a web page or document (`gmail`, `invoice`) finds the browser or editor that has it open
+
+![Searching for a project folder finds every window working in it, across apps and workspaces](docs/search-by-title.png)
+
+Matching ignores case and diacritics: `prohlizec` finds *Prohlížeč*.
 
 ## Keys
 
 | Key | Action |
 |---|---|
-| Type | Filter |
-| Up / Down, PageUp / PageDown | Move the selection |
-| Enter or click | Go to the window, or open the tray app |
-| Delete | Close the selected window and stay in the list |
-| Esc | Clear the filter, then close |
+| Type | Filter the list |
+| `↑` `↓`, `PageUp` `PageDown` | Move the selection |
+| `Enter` or click | Go to the window |
+| `Delete` | Close the selected window and stay in the list |
+| `Esc` | Clear the search, then close Lightnav |
 
-Enter on a window switches to its workspace and monitor and focuses it; a minimized window comes back to the workspace in front of you. A tray app is asked to open its window; if it doesn't respond, its tray menu is shown inside Lightnav.
+A minimized window comes back to the workspace you're on. `Delete` closes a window the same way `SUPER + W` does, so an app with unsaved work can still ask before closing.
 
 ## Install
 
@@ -43,17 +71,17 @@ o.bind("SUPER + N", "Lightnav", { panel = "smetak13.lightnav" })
 
 `SUPER + N` is free in a default Omarchy setup. Lightnav stays loaded in the shell, so it opens instantly.
 
-Remove it with `omarchy plugin remove smetak13.lightnav` and delete the binding.
+To remove it, run `omarchy plugin remove smetak13.lightnav` and delete the shortcut.
 
 ## Development
 
-The filtering, sorting, workspace numbering and layout miniature live in `Model.js`, tested with Node's built-in runner:
+Filtering, sorting, workspace numbering and the layout miniature live in `Model.js`. Run its tests with Node's built-in test runner:
 
 ```bash
 node --test tests/
 ```
 
-After editing the QML, run `omarchy restart shell`: a plugin that stays loaded keeps its old code until the shell restarts.
+After editing the QML, run `omarchy restart shell`. Lightnav stays loaded, so it keeps the old code until the shell restarts.
 
 ## License
 

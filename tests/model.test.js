@@ -63,15 +63,6 @@ test("a query ranks exact names, then prefixes, word starts, inner matches and t
   assert.deepEqual(names(arranged), ["Code", "Codex", "Visual Studio Code", "Decoder", "Chromium"])
 })
 
-test("a tray app that also has an open window is listed once, as the window", () => {
-  const windows = [row("Slack", "", { appKey: "slack" }), row("Discord", "", { appKey: "com.discordapp.Discord" })]
-  const tray = [row("Slack", "", { appKey: "slack" }), row("discord", "", { appKey: "discord" }), row("Dropbox", "", { appKey: "dropbox" })]
-
-  const kept = Model.withoutTrayDuplicates(tray, windows)
-
-  assert.deepEqual(names(kept), ["Dropbox"])
-})
-
 test("the miniature places every window of the workspace relative to its monitor and marks the chosen one", () => {
   const monitor = { x: 1920, y: 0, width: 3840, height: 2160, scale: 2 }
   const windows = [

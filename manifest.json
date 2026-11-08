@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "smetak13.lightnav",
   "name": "Lightnav",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Simon Smejkal",
-  "description": "Lightning-fast navigation between running apps and tray apps, on any workspace and monitor",
+  "description": "Jump to any open window on any workspace and monitor in a couple of keystrokes",
   "kinds": [
     "overlay"
   ],

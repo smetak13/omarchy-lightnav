@@ -1,5 +1,5 @@
 {
   "search.placeholder": "Go to app…",
-  "search.noMatches": "No running app matches \"%1\"",
-  "search.empty": "No running apps"
+  "search.noMatches": "No open window matches \"%1\"",
+  "search.empty": "No open windows"
 }
